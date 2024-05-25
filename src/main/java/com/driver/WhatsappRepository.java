@@ -55,21 +55,27 @@ public class WhatsappRepository {
 
     public Group createGroup(List<User> users){
 
-        if(users.size() == 2){
-            Group group = new Group(users.get(0).getName(),2);
-            groupUserMap.put(group, users);
-            adminMap.put(group, users.get(1));
-            return group;
+        int size = users.size();
+        if(size == 2){
+            Group newgroup = new Group();
+            newgroup.setName(users.get(1).getName());
+            newgroup.setNumberOfParticipants(users.size());
+            groupUserMap.put(newgroup,users);
+            groupMessageMap.put(newgroup,new ArrayList<Message>());
+            return newgroup;
         }
-        if(users.size() > 2){
+        else{
             customGroupCount++;
-            String groupName = "Group "+ customGroupCount;
-            Group group = new Group( groupName,users.size());
-            groupUserMap.put(group, users);
-            adminMap.put(group, users.get(0));
-            return group;
+
+            Group newgroup = new Group();
+            newgroup.setName("Group " + (customGroupCount));
+            newgroup.setNumberOfParticipants(users.size());
+            groupMessageMap.put(newgroup,new ArrayList<Message>());
+            groupUserMap.put(newgroup,users);
+            adminMap.put(newgroup, users.get(0));
+            return newgroup;
         }
-        return null;
+
     }
 
     public int createMessage(String content){
@@ -86,20 +92,21 @@ public class WhatsappRepository {
     //Throw "You are not allowed to send message" if the sender is not a member of the group
     //If the message is sent successfully, return the final number of messages in that group.
     public int sendMessage(Message message, User sender, Group group) throws Exception{
-        if(groupUserMap.containsKey(group)){
-            for(List<User> userList : groupUserMap.values()) {
-                if(userList.contains(sender)){
+        if(!groupUserMap.containsKey(group)){
+            throw new RuntimeException("Group does not exist");
+        }else{
+            for(User user : groupUserMap.get(group)){
+                if(user.equals(sender)){
+                    List<Message> messageList= groupMessageMap.get(group);
+                    messageList.add(message);
                     senderMap.put(message,sender);
-                    groupMessageMap.get(group).add(message);
-
-                }else{
-                    throw  new Exception("You are not allowed to send message");
+                    return  messageList.size();
                 }
             }
-        }else{
-            throw new Exception("Group does not exist");
+            throw new RuntimeException("You are not allowed to send message");
         }
-        return groupMessageMap.get(group).size();
+
+
     }
 
     public String changeAdmin(User approver, User user, Group group) throws Exception {
